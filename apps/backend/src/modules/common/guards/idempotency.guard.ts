@@ -1,32 +1,40 @@
-import { Injectable, CanActivate, ExecutionContext, ConflictException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, ConflictException, Logger } from '@nestjs/common';
 import { CacheService } from '../services/cache.service';
-import { Reflector } from '@nestjs/core';
 
 @Injectable()
 export class IdempotencyGuard implements CanActivate {
+    private readonly logger = new Logger(IdempotencyGuard.name);
+
     constructor(
         private readonly cacheService: CacheService,
-        private readonly reflector: Reflector
     ) { }
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest();
         const key = request.headers['x-idempotency-key'] || request.body.idempotencyKey;
 
-        if (!key) return true; // Not an idempotent request context
+        if (!key) return true;
 
         const cacheKey = `IDEMPOTENCY:${key}`;
-        const cachedResponse = await this.cacheService.get(cacheKey);
+        const ttl = 60 * 60 * 24; // 24h default
 
-        if (cachedResponse) {
-            throw new ConflictException('Request already processed. (Idempotency)');
-            // In a real implementation, we would return the CACHED response, 
-            // but for this guard we just block execution to protect the handler.
-            // An Interceptor is better suited to return the actual cached response.
+        // Metadata for Audit
+        const metadata = {
+            timestamp: new Date().toISOString(),
+            path: request.url,
+            method: request.method,
+            ip: request.ip
+        };
+
+        // ATOMIC LOCK: Try to acquire lock.
+        const acquired = await this.cacheService.setNx(cacheKey, metadata, ttl);
+
+        if (!acquired) {
+            this.logger.warn(`Idempotency Conflict: Key ${key} already exists.`);
+            // If lock not acquired, it means it's a duplicate request.
+            // We throw Conflict to indicate "Already Processed" or "Processing".
+            throw new ConflictException('Request already processed or in progress. (Idempotency)');
         }
-
-        // Lock (atomic placeholder)
-        await this.cacheService.set(cacheKey, { status: 'PROCESSING' }, 600);
 
         return true;
     }
