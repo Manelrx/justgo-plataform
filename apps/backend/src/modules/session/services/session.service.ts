@@ -20,7 +20,8 @@ export class SessionService {
         });
 
         if (activeSession) {
-            throw new ConflictException(`User ${customerId} already has an active session in store ${storeId}`);
+            this.logger.log(`Resuming active session for user ${customerId}`);
+            return activeSession;
         }
 
         // 2. Create

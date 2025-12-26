@@ -9,6 +9,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { BiometryModule } from './modules/biometry/biometry.module';
 import { SessionModule } from './modules/session/session.module';
 import { SalesModule } from './modules/sales/sales.module';
+import { PaymentModule } from './modules/payment/payment.module';
 
 @Module({
     imports: [
@@ -28,6 +29,7 @@ import { SalesModule } from './modules/sales/sales.module';
         BiometryModule,
         SessionModule,
         SalesModule,
+        PaymentModule,
     ],
     controllers: [],
     providers: [],

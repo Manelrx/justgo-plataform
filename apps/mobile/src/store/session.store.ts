@@ -21,7 +21,8 @@ interface SessionState {
     login: (userId: string) => Promise<void>;
     startSession: () => Promise<void>;
     addItem: (productCode: string) => Promise<void>;
-    finishShopping: () => Promise<string>; // Returns Sale ID
+    // finishShopping: () => Promise<string>; // Deprecated
+    clearCart: () => void;
 }
 
 export const useSessionStore = create<SessionState>((set, get) => ({
@@ -55,7 +56,12 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         set({ isLoading: true, error: null });
         try {
             const session = await SessionService.start();
-            set({ sessionId: session.id, cartItems: [], valTotal: 0, isLoading: false });
+            set({
+                sessionId: session.id,
+                cartItems: session.cart || [],
+                valTotal: session.total || 0,
+                isLoading: false
+            });
         } catch (e: any) {
             set({ error: 'Failed to start session', isLoading: false });
             throw e;
@@ -81,6 +87,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         }
     },
 
+    /* finishShopping: Legacy - Logic moved to CartScreen (Scan & Go) */
+    /*
     finishShopping: async () => {
         const { sessionId } = get();
         if (!sessionId) throw new Error('No active session');
@@ -88,12 +96,15 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         set({ isLoading: true, error: null });
         try {
             await SessionService.close(sessionId);
-            const sale = await SalesService.createFromSession(sessionId);
+            // const sale = await SalesService.createFromSession(sessionId); // Deprecated
             set({ sessionId: null, cartItems: [], valTotal: 0, isLoading: false });
-            return sale.id;
+            return ''; 
         } catch (e: any) {
             set({ error: 'Checkout failed', isLoading: false });
             throw e;
         }
     },
+    */
+
+    clearCart: () => set({ cartItems: [], valTotal: 0, sessionId: null }),
 }));

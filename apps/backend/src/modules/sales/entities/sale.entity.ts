@@ -12,9 +12,13 @@ export class Sale {
     @PrimaryGeneratedColumn('uuid')
     id!: string;
 
-    @Column()
+    @Column({ nullable: true })
     @Index({ unique: true }) // Idempotency: One Sale per Session
     sessionId!: string;
+
+    @Column({ nullable: true, unique: true })
+    @Index({ unique: true })
+    offlineId!: string;
 
     @Column()
     storeId!: string;
@@ -41,4 +45,10 @@ export class Sale {
 
     @UpdateDateColumn()
     updatedAt!: Date;
+
+    @Column({ type: 'jsonb', nullable: true })
+    paymentMeta: any;
+
+    @Column({ default: 'PENDING' })
+    erpSyncStatus!: string;
 }

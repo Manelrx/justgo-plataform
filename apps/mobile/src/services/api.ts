@@ -36,9 +36,13 @@ export const SessionService = {
 };
 
 export const SalesService = {
-    createFromSession: async (sessionId: string) => {
-        const response = await api.post(`/sales/from-session/${sessionId}`);
-        return response.data; // { id, ... }
+    getSale: async (id: string) => {
+        const response = await api.get(`/sales/${id}`);
+        return response.data;
+    },
+    checkout: async (items: { productCode: string; quantity: number }[]) => {
+        const response = await api.post('/sales/checkout', { items });
+        return response.data; // { saleId, total, pixCode }
     },
 };
 
